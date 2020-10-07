@@ -233,7 +233,12 @@ def download_url(url):
     with DownloadProgressBar(unit='B', unit_scale=True,
                              miniters=1, desc=url.split('/')[-1]) as t:
         urllib.request.urlretrieve(url, reporthook=t.update_to)
-        
+
+class Sampling(tf.keras.layers.Layer):
+    def call(self, inputs):
+        mean, log_var = inputs
+        return K.random_normal(tf.shape(log_var)) * K.exp(log_var / 2) + mean 
+    
         
 if __name__ == '__main__':
     
