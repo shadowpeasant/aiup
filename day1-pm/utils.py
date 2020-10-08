@@ -9,17 +9,10 @@ import numpy as np
 from scipy import signal
 from os import system
 import urllib.request
-
+import pandas as pd
 from tqdm import tqdm
 
-
-try:
-    import wget
-    print('\nWget Module was installed')
-except ImportError:
-    system("pip install wget")
-    import wget
-    
+K = tf.keras.backend
     
 root_logdir = os.path.join(os.curdir, "tb_logs")
 
@@ -220,6 +213,24 @@ def identify_anomaly(model, dataset, gif_file, threshold=4):
     create_gif('images', gif_file)
     
 
+def draw_anomaly(y_true, error, threshold):
+        groupsDF = pd.DataFrame({'error': error,
+                                 'true': y_true}).groupby('true')
+        print('y counts', y_true.value_counts())
+        figure, axes = plt.subplots(figsize=(12, 8))
+        axes.set_ylim(0,30)
+        for name, group in groupsDF:
+            axes.plot(group.index, group.error, marker='x' if name == 1 else 'o', linestyle='',
+                    color='r' if name == 1 else 'g', label="Anomaly" if name == 1 else "Normal")
+
+        axes.hlines(threshold, axes.get_xlim()[0], axes.get_xlim()[1], colors="b", zorder=100, label='Threshold')
+        axes.legend()
+        
+        plt.title("Anomalies")
+        plt.ylabel("Error")
+        plt.xlabel("Data")
+        plt.show()
+        
 
 
 class DownloadProgressBar(tqdm):
