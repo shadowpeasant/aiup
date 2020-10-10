@@ -123,6 +123,15 @@ def show_reconstructions(model, image):
     #plt.xlabel('reconstructed')
     plt.title('reconstructed')
     plt.axis("off")
+
+def get_reconstructions_loss(model, image):
+    im = Image.open(image)
+    im = np.array(im.resize((100,100)))/255.
+    im = np.expand_dims(np.expand_dims(im, axis=0), axis=3)
+    reconstructed = model.predict(im)
+    mse = tf.keras.losses.MeanSquaredError()
+    loss = mse(im, reconstructed)
+    return loss
     
 def plot_reconstruction_loss(img, losses, counter):
     if not os.path.exists('losses'):
