@@ -32,12 +32,12 @@ def get_run_logdir():
 
 def plot_training_loss(history):
     train_loss = history['loss']
+    epochs = range(1, len(train_loss) + 1)
+    plt.plot(epochs, train_loss, 'bo', label='Training_lossing loss')
     if 'val_loss' in history:
         val_loss = history['val_loss']
-    epochs = range(1, len(train_loss) + 1)
-    plt.plot(epochs, train_loss, 'bo', label='Traintrain_lossing loss')
-    if val_loss:
         plt.plot(epochs, val_loss, 'b', label='Validation loss')
+        
     plt.title('Training loss')
     plt.legend()
     plt.show()
@@ -156,7 +156,7 @@ def create_losses_animation(model, dataset, gif_file):
     mse = tf.keras.losses.MeanSquaredError()
     losses = []
     counter = 0
-    for image, _  in dataset:
+    for image, _  in tqdm(dataset):
         counter = counter + 1
         output = model.predict(image)
         loss = mse(image, output)
@@ -198,7 +198,7 @@ def plot_comparisons(img, output, diff, H, threshold, counter):
 def identify_anomaly(model, dataset, gif_file, threshold=4):
     threshold = threshold*255
     counter = 0;
-    for image, _  in dataset:
+    for image, _  in tqdm(dataset):
         counter = counter + 1
         output = model.predict(image)
         output = tf.multiply(output,255.)

@@ -3,10 +3,11 @@ import glob
 import numpy as np
 from PIL import Image
 import os
+from tqdm import tqdm
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-def prepare_dataset(file_set, img_height=100, img_width=100, batch_size=16, shuffle=False):
+def prepare_dataset(file_set, img_height=100, img_width=100, batch_size=16, shuffle=False, split=False, test_size=0.2):
     
     train_files = sorted(glob.glob(file_set))
 
@@ -14,7 +15,7 @@ def prepare_dataset(file_set, img_height=100, img_width=100, batch_size=16, shuf
     a = np.zeros((len(train_files),img_height, img_width,1)).astype(np.float32)
 
     # store the data in the array in the memory
-    for idx, filename in enumerate(train_files):
+    for idx, filename in tqdm(enumerate(train_files)):
         #print(f'opening {filename}')
         im = Image.open(filename)
         im = im.resize((img_width, img_height))
@@ -25,11 +26,21 @@ def prepare_dataset(file_set, img_height=100, img_width=100, batch_size=16, shuf
     # create a dataset with x and its label y, in this case (a,a) i.e. label is same as input
     if shuffle:
         dataset  = tf.data.Dataset.from_tensor_slices((a, a)). \
-                        shuffle(1000,seed=42,reshuffle_each_iteration=False). \
-                        batch(batch_size)
+                        shuffle(1000,seed=42,reshuffle_each_iteration=False)
     else:
-        dataset  = tf.data.Dataset.from_tensor_slices((a, a)).batch(batch_size)
-    return dataset
+        dataset  = tf.data.Dataset.from_tensor_slices((a, a))
+        
+    if split: 
+        
+        test_size = int(a.shape[0]*test_size)
+        train_size = int(a.shape[0]) - test_size
+        train_set = dataset.take(train_size)
+        test_set = dataset.skip(train_size).take(test_size)
+        
+        return train_set.batch(batch_size), test_set.batch(batch_size)
+    else:
+        
+        return dataset.batch(batch_size)
 
 dataset = 'UCSDped1'
 
