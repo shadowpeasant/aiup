@@ -184,7 +184,8 @@ def display_nearby_words(word, number_of_nearby_words=10):
     reverse_word_map = dict(map(reversed, text_tokenizer.word_index.items()))
 
     for i in range(1,number_of_nearby_words + 1):
-        print ("%-30s %f" % (reverse_word_map[dist[index[i]][0]], dist[index[i]][1]))
+        if index[i] != 0:
+            print ("%-30s %f" % (reverse_word_map[index[i]], dist[index[i]][1]))
         
         
 # Displays train_x and train_y

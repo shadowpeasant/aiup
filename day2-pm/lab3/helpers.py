@@ -272,8 +272,8 @@ def perform_transcription_on_file(audio_file):
     global nemo_model_for_speech_recognition, nemo_model_params
     
     y, sr = librosa.load(audio_file)
-    sf.write("recog.wav", y, samplerate=sr)
-    files = ["recog.wav"]
+    sf.write("data/output.wav", y, samplerate=sr)
+    files = ["data/output.wav"]
     nemo_model_for_speech_recognition.eval()
     for fname, transcription in zip(files, nemo_model_for_speech_recognition.transcribe(paths2audio_files=files)):
         print(f"Audio transcription as: {transcription}")
@@ -299,16 +299,16 @@ def display_audio_recorder():
 
 # Saves the recorded audio into a file
 #
-def save_recorded_audio(file = 'data/recording.wav'):
-    audio_recorder.save('data/recording.webm')
+def save_recorded_audio(file = 'data/output.wav'):
+    audio_recorder.save('data/output.webm')
 
-    os.system("ffmpeg -i data/recording.webm -hide_banner -loglevel panic -y " + file)
+    os.system("ffmpeg -i data/output.webm -hide_banner -loglevel panic -y " + file)
     return file
 
 
 # Extracts an audio clip from a movie file
 #
-def extract_audio_clip(movie_file, start_time, end_time, output_file='data/movieaudioclip.wav'):
+def extract_audio_clip(movie_file, start_time, end_time, output_file='data/output.wav'):
 
     # Load the video file.
     #
