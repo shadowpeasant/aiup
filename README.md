@@ -1,2 +1,2 @@
 # mindef-ai
-workshop repo for mindef ai uprofiling training
+workshop repo for MINDEF AI Up-Profiling training
