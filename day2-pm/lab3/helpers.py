@@ -14,6 +14,21 @@ import nemo.collections.asr as nemo_asr
 from ipywebrtc import CameraStream, ImageRecorder, AudioRecorder
 from moviepy.editor import *
 
+from IPython.display import HTML, Audio
+from google.colab.output import eval_js
+from base64 import b64decode
+from scipy.io.wavfile import read as wav_read
+import io
+import ffmpeg
+
+import sys
+IN_COLAB = 'google.colab' in sys.modules
+
+# Samples captured through the microphone from COlab.
+#
+colab_sample_rate = None
+colab_audio = None
+
 # These are functions that are imported into the Notebook
 #
 nemo_model_for_speech_recognition = None
@@ -217,6 +232,10 @@ def load_speech_recognition_nemo_model(file):
     nemo_model_params = json.load(open(file + ".params", "r"))
     nemo_model_for_speech_recognition = nemo_asr.models.EncDecCTCModel.restore_from(file) 
               
+
+def get_sr():
+  return nemo_model_params, nemo_model_for_speech_recognition
+
 # This method computes the Word Error Rate given a 
 # model and the validation data set set up in the 
 # params["model"]["validation_ds"] field.
@@ -256,8 +275,12 @@ def compute_wer(dataset_manifest, wbs=None):
             predictions = wbs.compute(log_probs)
 
         #print (greedy_predictions)
+        #print (targets)
+        #print (targets_lengths)
+        #print (targets.long().cpu().shape)
         # Notice the model has a helper object to compute WER
-        wer_num, wer_denom = nemo_model_for_speech_recognition._wer(greedy_predictions, targets, targets_lengths)
+        nemo_model_for_speech_recognition._wer(greedy_predictions, targets, targets_lengths)
+        _, wer_num, wer_denom = nemo_model_for_speech_recognition._wer.compute()
         wer_nums.append(wer_num.detach().cpu().numpy())
         wer_denoms.append(wer_denom.detach().cpu().numpy())
 
@@ -287,7 +310,7 @@ def get_params():
 
 # Returns an audio recorder to be displayed.
 #
-def display_audio_recorder():
+def display_audio_recorder_local():
     global audio_recorder
     camera = CameraStream(constraints=
                           {'facing_mode': 'user',
@@ -299,11 +322,147 @@ def display_audio_recorder():
 
 # Saves the recorded audio into a file
 #
-def save_recorded_audio(file = 'data/output.wav'):
+def save_recorded_audio_local(file = 'data/output.wav'):
     audio_recorder.save('data/output.webm')
 
     os.system("ffmpeg -i data/output.webm -hide_banner -loglevel panic -y " + file)
     return file
+
+
+# Display the audio recorder for colab
+#
+def display_audio_recorder_colab():
+    global colab_sample_rate, colab_audio
+  
+    AUDIO_HTML = """
+    <script>
+    var my_div = document.createElement("DIV");
+    var my_p = document.createElement("P");
+    var my_btn = document.createElement("BUTTON");
+    var t = document.createTextNode("Press to start recording");
+
+    my_btn.appendChild(t);
+    my_div.appendChild(my_btn);
+    document.body.appendChild(my_div);
+
+    var base64data = 0;
+    var reader;
+    var recorder, gumStream;
+    var recordButton = my_btn;
+    var state = 0;
+
+    recordButton.innerText = "Start Recording";
+    recordButton.disabled = true;
+
+    navigator.mediaDevices.getUserMedia({audio: true}).then((stream) => {
+      gumStream = stream;
+      var options = {
+        mimeType : 'audio/webm;codecs=opus'
+      };              
+      recorder = new MediaRecorder(stream, options);
+      recordButton.disabled = false;
+    });
+
+    // https://stackoverflow.com/a/951057
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    var data = new Promise(resolve =>
+      {
+        console.log('when')
+
+        recordButton.onclick = () => {
+          if (state == 0)
+          {
+            recorder.ondataavailable = function(e) {            
+              var url = URL.createObjectURL(e.data);
+              var preview = document.createElement('audio');
+              preview.controls = true;
+              preview.src = url;
+              document.body.appendChild(preview);
+
+              reader = new FileReader();
+              reader.readAsDataURL(e.data); 
+              reader.onloadend = function() {
+                base64data = reader.result;
+
+                // Return the result to the eval_js function
+                //
+                resolve(base64data.toString())
+
+                recordButton.innerText = "Complete";
+                recordButton.disabled = true;
+                state = 2;            
+              }
+            };
+            recorder.start();
+            recordButton.innerText = "Stop Recording";
+            state = 1;
+          }
+          else if (state == 1)
+          {
+            if (recorder && recorder.state == "recording") {
+                recorder.stop();
+                gumStream.getAudioTracks()[0].stop();
+                recordButton.innerText = "Saving the recording... pls wait!"
+            }
+          }
+        }
+
+      });
+
+    </script>
+    """
+
+    display(HTML(AUDIO_HTML))
+    data = eval_js("data")
+    binary = b64decode(data.split(',')[1])
+
+    process = (ffmpeg
+        .input('pipe:0')
+        .output('pipe:1', format='wav')
+        .run_async(pipe_stdin=True, pipe_stdout=True, pipe_stderr=True, quiet=True, overwrite_output=True)
+    )
+    output, err = process.communicate(input=binary)
+
+    riff_chunk_size = len(output) - 8
+    # Break up the chunk size into four bytes, held in b.
+    q = riff_chunk_size
+    b = []
+    for i in range(4):
+        q, r = divmod(q, 256)
+        b.append(r)
+
+    # Replace bytes 4:8 in proc.stdout with the actual size of the RIFF chunk.
+    riff = output[:4] + bytes(b) + output[8:]
+
+    colab_sample_rate, colab_audio = wav_read(io.BytesIO(riff))
+
+# Save the audio for colab
+#
+def save_recorded_audio_colab(file = 'data/output.wav'):
+    sf.write(file, colab_audio, colab_sample_rate)
+    return file
+
+
+# Display the audio recorder whether it is running
+# on your local machine or on Google Colab.
+# 
+def display_audio_recorder():
+    if (not IN_COLAB):
+        display_audio_recorder_local()
+    else:
+        display_audio_recorder_colab()
+
+# Save the audio recorded through IPyWebRTC
+# on your local machine or on Google Colab.
+#
+def save_recorded_audio(file = 'data/output.wav'):
+    if (not IN_COLAB):
+        return save_recorded_audio_local(file)
+    else:
+        return save_recorded_audio_colab(file)
 
 
 # Extracts an audio clip from a movie file
