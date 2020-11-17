@@ -1,2 +1,1 @@
-# mindef-ai
-mindef ai course
+Day 2 PM codes

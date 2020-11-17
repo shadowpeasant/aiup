@@ -1,2 +1,3 @@
-# mindef-ai
-workshop repo for MINDEF AI Up-Profiling training
+# AI Training Workshop Materials
+
+Codes repository for AI training 
