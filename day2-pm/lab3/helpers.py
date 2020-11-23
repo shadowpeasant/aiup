@@ -20,6 +20,7 @@ from base64 import b64decode
 from scipy.io.wavfile import read as wav_read
 import io
 import ffmpeg
+from tqdm import tqdm
 
 import sys
 IN_COLAB = 'google.colab' in sys.modules
@@ -89,14 +90,16 @@ def display_audio_mel_spectrogram(audio_file):
 # saves a copy of that WAV file alongside the SPH file.
 #
 def convert_sph_files_to_wav(folder):
-    
+
+    filepathlist = []
     for root, dirs, files in os.walk(folder, topdown=False):
         for name in files:
             if name.endswith(".sph"):
-                print(os.path.join(root, name))
-                
-                samples, sample_rate = librosa.load(os.path.join(root, name), sr=16000)
-                sf.write(os.path.join(root, name.replace(".sph", ".wav")), samples, sample_rate)
+                filepathlist.append(os.path.join(root, name))
+
+    for filepath in tqdm(filepathlist):
+        samples, sample_rate = librosa.load(filepath, sr=16000)
+        sf.write(filepath.replace(".sph", ".wav"), samples, sample_rate)
     print ("Complete.")
                 
 
@@ -132,7 +135,11 @@ def get_all_unique_words(transcripts_path):
 def build_manifest_for_an4_dataset(transcripts_path, wav_path, manifest_path):
     with open(transcripts_path, 'r') as fin:
         with open(manifest_path, 'w') as fout:
+            lines = []
             for line in fin:
+                lines.append(line)
+
+            for line in tqdm(lines):
                 # Lines look like this:
                 # <s> transcript </s> (fileID)
                 transcript = line[: line.find('(')-1].lower()
@@ -145,7 +152,7 @@ def build_manifest_for_an4_dataset(transcripts_path, wav_path, manifest_path):
                     file_id[file_id.find('-')+1 : file_id.rfind('-')],
                     file_id + '.wav')
 
-                duration = librosa.core.get_duration(filename=audio_path)
+                duration =  float(os.path.getsize(audio_path)) / 2 / 16000 #librosa.core.get_duration(filename=audio_path)
 
                 # Write the metadata to the manifest
                 metadata = {
