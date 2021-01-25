@@ -1,3 +1,8 @@
 - [L437 Grp 1](https://nyp.padlet.org/markk/2473s65sq5042u7m)
 - [L437 Grp 2](https://nyp.padlet.org/markk/lfejc9phxph1hpsn)
-
+- [L437 Grp 3](https://nyp.padlet.org/markk/tv6bn3ks49xw6aie)
+- [L437 Grp 4](https://nyp.padlet.org/markk/u1s6sjpcmzgytd9o)
+- [L530 Grp 1](https://nyp.padlet.org/markk/m03mf2ai0eugz51z)
+- [L530 Grp 2](https://nyp.padlet.org/markk/w23j07lwd8d2dp07)
+- [L530 Grp 3](https://nyp.padlet.org/markk/29hrfbczg1mtc6cl)
+- [L530 Grp 4](https://nyp.padlet.org/markk/jkzt8qov1rycfpc4)
