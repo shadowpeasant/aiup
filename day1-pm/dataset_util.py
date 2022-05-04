@@ -37,10 +37,10 @@ def prepare_dataset(file_set, img_height=100, img_width=100, batch_size=16, shuf
         train_set = dataset.take(train_size)
         test_set = dataset.skip(train_size).take(test_size)
         
-        return train_set.batch(batch_size), test_set.batch(batch_size)
+        return train_set.prefetch(tf.data.AUTOTUNE).batch(batch_size), test_set.prefetch(tf.data.AUTOTUNE).batch(batch_size)
     else:
         
-        return dataset.batch(batch_size)
+        return dataset.prefetch(tf.data.AUTOTUNE).batch(batch_size)
 
 dataset = 'UCSDped1'
 
