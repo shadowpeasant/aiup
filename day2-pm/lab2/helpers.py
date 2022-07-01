@@ -8,8 +8,8 @@ import os
 from datetime import datetime
 import pickle
 
-import tensorflow 
-import tensorflow.keras
+import tensorflow
+import tensorflow.keras as keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, SimpleRNN, LSTM, GRU, Bidirectional, Embedding, Dropout, Activation
 from tensorflow.keras.utils import to_categorical
@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, classification_report
 import seaborn as sns
 from functools import reduce
+import pickle
 
 # Declare global ariables used by the abstracted functions
 #
@@ -36,8 +37,9 @@ train_y = None
 test_x = None
 test_y = None
 
+history = None
 
-
+print("version 1.2 loaded")
 # Loads all text data from the CSV file into memory#
 #
 def load_text_data_from_csv(train_csv_file, test_csv_file, text_column, class_column):
@@ -298,22 +300,11 @@ def display_training_loss_and_accuracy(history):
 
 # Display evaluation results
 #
-def display_model_evaluation_results(y_train, pred_y_train, y_test, pred_y_test, labels):
+def display_model_evaluation_results(y_test, pred_y_test, labels):
     
     plt.figure(figsize=(20,6))  
 
-    labels = np.array(labels)
- 
-    # Print the first Confusion Matrix for the training data
-    #
-    cm = confusion_matrix(y_train, pred_y_train)
-
-    cm_df = pd.DataFrame(cm, labels, labels)          
-    plt.subplot(1, 2, 1)
-    plt.title('Confusion Matrix (Train Data)')
-    sns.heatmap(cm_df, annot=True)
-    plt.ylabel('Actual')
-    plt.xlabel('Predicted')        
+    labels = np.array(labels)      
     
     # Print the second Confusion Matrix for the test data
     #    
@@ -330,10 +321,6 @@ def display_model_evaluation_results(y_train, pred_y_train, y_test, pred_y_test,
 
     # Finally display the classification reports
     #
-    print ("Train Data")
-    print ("--------------------------------------------------------")
-    print(classification_report(y_train, pred_y_train, target_names=labels))
-    print ("")
     print ("Test Data")
     print ("--------------------------------------------------------")
     print(classification_report(y_test, pred_y_test, target_names=labels))
@@ -351,6 +338,7 @@ def set_learning_rate(lr):
 #
 def train_text_classifier_model(batch_size=8, epochs=20):
     global text_classifier_model
+    global history
 
     '''   
     # Create the training folder
@@ -376,21 +364,36 @@ def train_text_classifier_model(batch_size=8, epochs=20):
     #
     history = text_classifier_model.fit(train_x, train_y, validation_data=(test_x, test_y), batch_size=batch_size, epochs=epochs)
     
+    # save the result and model 
+    with open('train_history.pkl', 'wb') as file_pi:
+        pickle.dump(history, file_pi)
+    
+    text_classifier_model.save("sentiment.model")
+
+    # display_training_loss_and_accuracy(history)
+    # display_model_evaluation_results(actual_train_y, pred_train_y, actual_test_y, pred_test_y, text_classifier_labels)
+
+def display_training_progress(): 
+    display_training_loss_and_accuracy(history)
+
+def evaluate_model(): 
+    global text_classifier_model
     # Evaluate and display the results of the trained model.
     #
     print ("Evaluating classifier...")
-    pred_train_y = text_classifier_model.predict(train_x)
     pred_test_y = text_classifier_model.predict(test_x)
 
-    actual_train_y = np.argmax(train_y, axis=1)
-    pred_train_y = np.argmax(pred_train_y, axis=1)
     actual_test_y = np.argmax(test_y, axis=1)
     pred_test_y = np.argmax(pred_test_y, axis=1)
+
+    display_model_evaluation_results(actual_test_y, pred_test_y, text_classifier_labels)
+
+def load_pretrained(): 
+    global text_classifier_model
+    global history 
     
-    # Display the training history and evaluation results
-    #
-    display_training_loss_and_accuracy(history)
-    display_model_evaluation_results(actual_train_y, pred_train_y, actual_test_y, pred_test_y, text_classifier_labels)
+    text_classifier_model = keras.models.load_model('sentiment.model')
+    history = pickle.load(open("train_history.pkl", "rb"))
 
 # Save the Text Classifier model
 #
