@@ -57,7 +57,7 @@ def create_text_classifier_model_naivebayes(alpha=1.0, fit_prior=True, class_pri
     text_classifier_model = Pipeline([
         ('vect', CountVectorizer(tokenizer=LemmaTokenizer())),
         ('tfidf', TfidfTransformer()),
-        ('clf', MultinomialNB(alpha, fit_prior, class_prior)),
+        ('clf', MultinomialNB(alpha=alpha, fit_prior=fit_prior, class_prior=None)),
     ])
     
 # Create a SVM classifier using Scikit Learn
@@ -218,6 +218,6 @@ def classify_text(text):
     print ("Classification result:")
     print (text_classifier_labels[result[0]])
 
-    
+nltk.download('omw-1.4')
 nltk.download('punkt')
 nltk.download('wordnet')
