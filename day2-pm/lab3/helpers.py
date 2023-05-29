@@ -56,7 +56,7 @@ def display_audio_waveform(audio_file):
     plt.title('Waveform of Audio Example')
     plt.ylabel('Amplitude')
 
-    _ = librosa.display.waveplot(samples)
+    _ = librosa.display.waveshow(samples)
     
 # This function displays the audio spectrogram of an audio file
 #
