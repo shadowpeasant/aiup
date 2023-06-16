@@ -165,7 +165,7 @@ def create_losses_animation(model, dataset, gif_file):
     mse = tf.keras.losses.MeanSquaredError()
     losses = []
     counter = 0
-    for image, _  in tqdm(dataset):
+    for image, _  in tqdm(dataset, position=0, leave=0):
         counter = counter + 1
         output = model.predict(image)
         loss = mse(image, output)
